@@ -51,9 +51,13 @@ const MAZE = MAZE_STR.map( ( row ) => row.split( '' ).map( parseTile ) );
 
 const TUNNEL_ROW = 14;
 const PACMAN_START = { x: 13, y: 23 };
+// Cuatro posiciones validas dentro de la guarida (x 11..16, y 13..15).
+// El orden define el color y el turno de salida de cada fantasma.
 const GHOST_STARTS = [
-  { x: 13, y: 14, kind: 'hunter' }, // dentro de la pen
-  { x: 14, y: 14, kind: 'random' }, // dentro de la pen
+  { x: 13, y: 13, kind: 'direct' },   // rojo, sale primero
+  { x: 14, y: 13, kind: 'ambusher' }, // rosa
+  { x: 13, y: 14, kind: 'flanker' },  // cian
+  { x: 14, y: 14, kind: 'wanderer' }, // naranja
 ];
 
 window.MAZE = MAZE;
