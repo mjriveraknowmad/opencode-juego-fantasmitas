@@ -86,3 +86,6 @@ Abrí el 01-cuatro-fantasmas.md y cambié el texto
 por 
 **Estado:** Implementado
 
+
+
+Subimos todo al github, hicimos el PR y mergeamos a main
