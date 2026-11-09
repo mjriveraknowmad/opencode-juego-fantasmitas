@@ -70,10 +70,12 @@ function drawDots( ctx, grid ) {
   ctx.fillStyle = DOT_COLOR;
   for ( let y = 0; y < grid.length; y++ ) {
     for ( let x = 0; x < grid[ 0 ].length; x++ ) {
-      if ( grid[ y ][ x ] !== 2 ) continue;
+      const tile = grid[ y ][ x ];
+      if ( tile !== 2 && tile !== 4 ) continue;
       const { cx, cy } = cellCenter( x, y );
       ctx.beginPath();
-      ctx.arc( cx, cy, 2.5, 0, Math.PI * 2 );
+      // El power pellet (4) se dibuja mas grande que el dot (2).
+      ctx.arc( cx, cy, tile === 4 ? 6 : 2.5, 0, Math.PI * 2 );
       ctx.fill();
     }
   }
@@ -98,7 +100,7 @@ function drawPacman( ctx, p, frame ) {
   ctx.fill();
 }
 
-function drawGhost( ctx, g, color ) {
+function drawGhost( ctx, g, color, frightened ) {
   const { cx, cy } = cellCenter( g.x, g.y );
   const r = TILE / 2 - 1;
   const top = cy - r;
@@ -118,7 +120,7 @@ function drawGhost( ctx, g, color ) {
   ctx.closePath();
   ctx.fill();
 
-  // ojos mirando segun direccion
+  // ojos mirando segun direccion; asustado, ojos blancos sin pupila.
   const dir = DIRS[ g.dir ] || { x: 0, y: 0 };
   const ex = dir.x * 1.6;
   const ey = dir.y * 1.6;
@@ -127,6 +129,7 @@ function drawGhost( ctx, g, color ) {
     ctx.beginPath();
     ctx.arc( cx + off, cy - 1, 3, 0, Math.PI * 2 );
     ctx.fill();
+    if ( frightened ) continue;
     ctx.fillStyle = '#0000bb';
     ctx.beginPath();
     ctx.arc( cx + off + ex, cy - 1 + ey, 1.5, 0, Math.PI * 2 );
@@ -146,6 +149,8 @@ function drawHUD( ctx, game, W ) {
 
 // Un color por fantasma, en el mismo orden que GHOST_STARTS: rojo, rosa, cian, naranja.
 const GHOST_COLORS = [ '#ff0000', '#ffb8ff', '#00ffff', '#ffb852' ];
+const FRIGHTENED_COLOR = '#2121ff';
+const FRIGHTENED_FLASH_COLOR = '#ffffff';
 
 function draw( ctx, game, frame ) {
   const grid = game.grid;
@@ -159,7 +164,21 @@ function draw( ctx, game, frame ) {
   drawDoor( ctx, grid );
   drawDots( ctx, grid );
   drawPacman( ctx, game.pacman, frame );
-  game.ghosts.forEach( ( g, i ) => drawGhost( ctx, g, GHOST_COLORS[ i ] || '#ff0000' ) );
+
+  const frightened = isFrightened( game );
+  const remainingMs = game.frightenedUntilMs - game.elapsedMs;
+  const flashWhite =
+    frightened &&
+    remainingMs <= FRIGHTENED_FLASH_MS &&
+    Math.floor( remainingMs / 250 ) % 2 === 0;
+
+  game.ghosts.forEach( ( g, i ) => {
+    if ( g.eaten ) return;
+    let color = GHOST_COLORS[ i ] || '#ff0000';
+    if ( frightened ) color = flashWhite ? FRIGHTENED_FLASH_COLOR : FRIGHTENED_COLOR;
+    drawGhost( ctx, g, color, frightened );
+  } );
+
   drawHUD( ctx, game, W );
 }
 
