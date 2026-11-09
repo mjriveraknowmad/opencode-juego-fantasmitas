@@ -15,6 +15,8 @@ const GHOST_SPEED = 0.1;    // 1/10 celda/frame
 const GHOST_RELEASE_MS = 1500; // separacion entre salidas de la guarida
 const MAX_DELTA_MS = 100;      // evita saltos si el navegador se bloquea
 const POWER_PELLET_POINTS = 50;
+const FRIGHTENED_MS = 6000;       // duracion total del modo asustado
+const FRIGHTENED_FLASH_MS = 2000; // parpadeo final
 
 // Crea una partida nueva. Copia MAZE (pristino) a game.grid para poder comer
 // dots sin destruir el original, y reiniciar.
@@ -34,6 +36,8 @@ function createGame() {
     grid,
     elapsedMs: 0,
     lastTickMs: null,
+    frightenedUntilMs: 0, // 0 = inactivo; activo mientras supere elapsedMs
+    ghostCombo: 0,        // fantasmas comidos con el pellet actual
     pacman: {
       x: PACMAN_START.x,
       y: PACMAN_START.y,
@@ -110,6 +114,9 @@ function movePacman( game ) {
       grid[ p.y ][ p.x ] = 0;
       game.score += POWER_PELLET_POINTS;
       game.itemsRemaining--;
+      // Activar o renovar el modo asustado.
+      game.frightenedUntilMs = game.elapsedMs + FRIGHTENED_MS;
+      game.ghostCombo = 0;
     }
     // Si no puede seguir, se detiene en la celda.
     if ( !canMove( grid, p.x, p.y, p.dir, 'pacman' ) ) return;
@@ -366,6 +373,11 @@ function collides( a, b ) {
   return Math.abs( a.x - b.x ) < 0.5 && Math.abs( a.y - b.y ) < 0.5;
 }
 
+// El modo asustado se deriva del tiempo de juego transcurrido.
+function isFrightened( game ) {
+  return game.frightenedUntilMs > game.elapsedMs;
+}
+
 function update( game ) {
   // Tiempo real en ms; el delta se limita para evitar saltos.
   const now = performance.now();
@@ -391,9 +403,17 @@ function update( game ) {
     }
   }
 
+  // Fin del modo asustado: se apaga el efecto.
+  if ( game.frightenedUntilMs > 0 && !isFrightened( game ) ) {
+    game.frightenedUntilMs = 0;
+    game.ghostCombo = 0;
+  }
+
   if ( game.itemsRemaining <= 0 ) game.state = 'won';
 }
 
 window.createGame = createGame;
 window.update = update;
 window.DIRS = DIRS;
+window.isFrightened = isFrightened;
+window.FRIGHTENED_FLASH_MS = FRIGHTENED_FLASH_MS;
