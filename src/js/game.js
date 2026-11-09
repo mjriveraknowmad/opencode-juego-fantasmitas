@@ -12,6 +12,7 @@ const OPPOSITE = { left: 'right', right: 'left', up: 'down', down: 'up' };
 
 const PACMAN_SPEED = 0.125; // 1/8 celda/frame -> alinea cada 8 frames
 const GHOST_SPEED = 0.1;    // 1/10 celda/frame
+const GHOST_FRIGHTENED_SPEED = 0.05; // mitad de velocidad mientras asustado
 const GHOST_RELEASE_MS = 1500; // separacion entre salidas de la guarida
 const MAX_DELTA_MS = 100;      // evita saltos si el navegador se bloquea
 const POWER_PELLET_POINTS = 50;
@@ -117,6 +118,11 @@ function movePacman( game ) {
       // Activar o renovar el modo asustado.
       game.frightenedUntilMs = game.elapsedMs + FRIGHTENED_MS;
       game.ghostCombo = 0;
+      // Inversion inmediata de los fantasmas no comidos.
+      for ( const g of game.ghosts ) {
+        if ( g.eaten ) continue;
+        g.dir = OPPOSITE[ g.dir ];
+      }
     }
     // Si no puede seguir, se detiene en la celda.
     if ( !canMove( grid, p.x, p.y, p.dir, 'pacman' ) ) return;
@@ -313,8 +319,43 @@ function decideWanderer( game, g ) {
   g.dir = best;
 }
 
+// Asustado: elige la direccion valida que mas lo aleja de Pac-Man.
+function decideFrightened( game, g ) {
+  const grid = game.grid;
+  const from = { x: Math.round( g.x ), y: Math.round( g.y ) };
+  const choices = TIE_ORDER.filter(
+    ( dir ) => canMove( grid, from.x, from.y, dir, 'ghost' )
+  );
+  if ( !choices.length ) return;
+
+  const dist = distanceField( grid, pacmanCell( game ) );
+  if ( !dist ) {
+    g.dir = choices[ Math.floor( Math.random() * choices.length ) ];
+    return;
+  }
+
+  // Se permite el giro de 180: huir puede requerirlo.
+  let best = null;
+  let bestDist = -Infinity;
+  for ( const dir of choices ) {
+    const n = neighbor( grid, from.x, from.y, dir );
+    if ( !n ) continue;
+    const d = dist[ n.y ][ n.x ];
+    if ( d > bestDist ) {
+      bestDist = d;
+      best = dir;
+    }
+  }
+  if ( best ) g.dir = best;
+}
+
 function decideGhost( game, g ) {
   const grid = game.grid;
+
+  if ( isFrightened( game ) ) {
+    decideFrightened( game, g );
+    return;
+  }
 
   if ( g.kind === 'wanderer' ) {
     decideWanderer( game, g );
@@ -344,6 +385,8 @@ function moveGhost( game, g ) {
   if ( aligned( g.x ) && aligned( g.y ) ) {
     g.x = Math.round( g.x );
     g.y = Math.round( g.y );
+    // La velocidad solo cambia en celdas alineadas para no romper la rejilla.
+    g.speed = isFrightened( game ) ? GHOST_FRIGHTENED_SPEED : GHOST_SPEED;
     decideGhost( game, g );
     if ( !canMove( grid, g.x, g.y, g.dir, 'ghost' ) ) return;
   }
