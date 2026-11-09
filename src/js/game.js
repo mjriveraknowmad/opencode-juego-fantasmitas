@@ -407,11 +407,15 @@ function resetPositions( game ) {
   p.dir = 'left';
   p.nextDir = null;
   game.elapsedMs = 0; // la salida escalonada vuelve a empezar
+  game.frightenedUntilMs = 0; // perder una vida corta el modo asustado
+  game.ghostCombo = 0;
   game.ghosts.forEach( ( g, i ) => {
     g.x = GHOST_STARTS[ i ].x;
     g.y = GHOST_STARTS[ i ].y;
     g.dir = 'up';
+    g.speed = GHOST_SPEED;
     g.releaseAt = i * GHOST_RELEASE_MS;
+    g.eaten = false;
   } );
 }
 

@@ -12,7 +12,7 @@ Pac-Man-like MVP in vanilla JS, HTML and CSS. No dependencies, bundler, build, l
 ## Architecture
 
 - Four classic scripts loaded in a fixed order in `src/index.html`: `maze.js` → `game.js` → `render.js` → `main.js`. No ES modules or imports; each file publishes to `window` and reads the other files' globals. Adding a file means adding a `<script>` before `main.js` and exporting via `window`.
-- `src/js/maze.js`: the level is 31 strings of exactly 28 chars, parsed to numbers. Tile values: `0` empty, `1` wall, `2` dot, `3` pen door. `MAZE` is pristine; each game copies it.
+- `src/js/maze.js`: the level is 31 strings of exactly 28 chars, parsed to numbers. Tile values: `0` empty, `1` wall, `2` dot, `3` pen door, `4` power pellet. `MAZE` is pristine; each game copies it.
 - `src/js/game.js`: state and rules only, no DOM. Exports `createGame`, `update`, `DIRS`. Actors use fractional cell coordinates; speeds are `0.125` and `0.1` cell/frame so they land exactly on cell centers every 8/10 frames. Changing them without aligning movement logic breaks turns and collisions.
 - `src/js/render.js`: canvas drawing, `TILE = 20`, canvas 560×620 (= 28×31 cells). Always draw from `game.grid`, never `MAZE`, or eaten dots reappear.
 - `src/js/main.js`: `requestAnimationFrame` loop, keyboard, and overlay transitions between `start`, `playing`, `won`, `lost`.
@@ -21,7 +21,7 @@ Pac-Man-like MVP in vanilla JS, HTML and CSS. No dependencies, bundler, build, l
 
 - Maze rows must stay 28 chars and there must be 31 rows. Nothing validates this, so one wrong character shifts the level.
 - Pac-Man is blocked by walls (`1`) and the pen door (`3`); ghosts are blocked only by walls (`1`). Row `14` (`TUNNEL_ROW`) wraps horizontally at both edges.
-- `createGame()` clears the dot under Pac-Man's start cell and derives `dotsRemaining` from `game.grid`; don't hardcode dot counts.
+- `createGame()` clears the dot under Pac-Man's start cell and derives `itemsRemaining` (dots + power pellets) from `game.grid`; don't hardcode item counts.
 - Game logic never touches the DOM and rendering never mutates state — keep that split.
 
 ## Spec-driven workflow
