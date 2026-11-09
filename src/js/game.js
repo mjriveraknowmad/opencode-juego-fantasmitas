@@ -18,6 +18,7 @@ const MAX_DELTA_MS = 100;      // evita saltos si el navegador se bloquea
 const POWER_PELLET_POINTS = 50;
 const FRIGHTENED_MS = 6000;       // duracion total del modo asustado
 const FRIGHTENED_FLASH_MS = 2000; // parpadeo final
+const GHOST_COMBO_POINTS = [ 200, 400, 800, 1600 ];
 
 // Crea una partida nueva. Copia MAZE (pristino) a game.grid para poder comer
 // dots sin destruir el original, y reiniciar.
@@ -53,6 +54,8 @@ function createGame() {
       speed: GHOST_SPEED,
       kind: g.kind,
       releaseAt: i * GHOST_RELEASE_MS, // 0, 1500, 3000, 4500
+      home: { x: g.x, y: g.y },        // celda de la guarida a la que vuelve
+      eaten: false,                    // esperando en la guarida tras ser comido
     } ) ),
   };
 }
@@ -430,26 +433,49 @@ function update( game ) {
 
   movePacman( game );
   // Un fantasma no liberado permanece inmóvil en su celda de salida.
+  // Un fantasma comido espera en la guarida hasta el fin del efecto.
   game.ghosts.forEach( ( g ) => {
+    if ( g.eaten ) return;
     if ( game.elapsedMs >= g.releaseAt ) moveGhost( game, g );
   } );
 
+  // El estado del efecto se fija una vez por frame para toda la colision.
+  const frightened = isFrightened( game );
+
   for ( const g of game.ghosts ) {
-    if ( collides( game.pacman, g ) ) {
-      game.lives--;
-      if ( game.lives <= 0 ) {
-        game.state = 'lost';
-        return;
-      }
-      resetPositions( game );
-      break;
+    if ( g.eaten || !collides( game.pacman, g ) ) continue;
+
+    if ( frightened ) {
+      // Comer fantasma: combo, vuelta a la guarida y espera.
+      const index = Math.min( game.ghostCombo, GHOST_COMBO_POINTS.length - 1 );
+      game.score += GHOST_COMBO_POINTS[ index ];
+      game.ghostCombo++;
+      g.eaten = true;
+      g.x = g.home.x;
+      g.y = g.home.y;
+      g.dir = 'up';
+      g.speed = GHOST_SPEED;
+      continue;
     }
+
+    game.lives--;
+    if ( game.lives <= 0 ) {
+      game.state = 'lost';
+      return;
+    }
+    resetPositions( game );
+    break;
   }
 
-  // Fin del modo asustado: se apaga el efecto.
+  // Fin del modo asustado: se apaga el efecto y salen los comidos.
   if ( game.frightenedUntilMs > 0 && !isFrightened( game ) ) {
     game.frightenedUntilMs = 0;
     game.ghostCombo = 0;
+    for ( const g of game.ghosts ) {
+      if ( !g.eaten ) continue;
+      g.eaten = false;
+      g.releaseAt = game.elapsedMs + GHOST_RELEASE_MS;
+    }
   }
 
   if ( game.itemsRemaining <= 0 ) game.state = 'won';

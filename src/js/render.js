@@ -173,6 +173,7 @@ function draw( ctx, game, frame ) {
     Math.floor( remainingMs / 250 ) % 2 === 0;
 
   game.ghosts.forEach( ( g, i ) => {
+    if ( g.eaten ) return;
     let color = GHOST_COLORS[ i ] || '#ff0000';
     if ( frightened ) color = flashWhite ? FRIGHTENED_FLASH_COLOR : FRIGHTENED_COLOR;
     drawGhost( ctx, g, color, frightened );
