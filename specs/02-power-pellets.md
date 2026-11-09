@@ -1,6 +1,6 @@
 # SPEC 02 — Power pellets y modo asustado
 
-> **Estado:** Aprobado
+> **Estado:** Implementado
 > **Depende de:** SPEC 01
 > **Fecha:** 2026-11-09
 > **Objetivo:** Añadir cuatro power pellets que, al comerse, activan durante 6 segundos un modo en el que los fantasmas huyen, bajan de velocidad y pueden ser comidos por Pac-Man con puntuación en combo.

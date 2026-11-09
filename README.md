@@ -138,3 +138,28 @@ Ejecuté :
 
 /spec-impl 02-power-pellets
 
+
+
+Luego:
+
+Sí, empieza con el Paso 1
+
+Sí, continúa con el Paso 2
+
+Sí, continúa con el Paso 3
+
+Sí, continúa con el Paso 4
+
+Sí, continúa con el Paso 5
+
+Sí, continúa con el Paso 6
+
+Sí, continúa con el Paso 7
+
+Por el medio de cada paso fui haciendo commits.
+
+
+Abrí el 02-power-pellets.md y cambié el texto 
+**Estado:** Aprobado  
+por 
+**Estado:** Implementado
