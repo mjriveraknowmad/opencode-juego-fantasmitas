@@ -1,6 +1,6 @@
 # SPEC 01 — Cuatro fantasmas con comportamientos distintos
 
-> **Estado:** Aprobado
+> **Estado:** Implementado
 > **Depende de:** —
 > **Fecha:** 2026-11-09
 > **Objetivo:** Añadir cuatro fantasmas con comportamientos diferenciados —directo, emboscador, flanqueador y errático— que comparten velocidad y salen escalonados de la guarida.
