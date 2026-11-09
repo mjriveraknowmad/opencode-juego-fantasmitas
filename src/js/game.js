@@ -239,6 +239,23 @@ function ghostTarget( game, g ) {
     return pac;
   }
 
+  if ( g.kind === 'flanker' ) {
+    const pivot = aheadOfPacman( game, 2 );
+    const direct = game.ghosts.find( ( gh ) => gh.kind === 'direct' );
+    const directCell = direct
+      ? { x: Math.round( direct.x ), y: Math.round( direct.y ) }
+      : pac;
+    // Simetria del pivote respecto al fantasma directo.
+    const target = clipToMaze( grid, {
+      x: 2 * pivot.x - directCell.x,
+      y: 2 * pivot.y - directCell.y,
+    } );
+    if ( !isWall( grid, target.x, target.y, 'ghost' ) && reachable( grid, g, target ) ) {
+      return target;
+    }
+    return pac;
+  }
+
   return null;
 }
 
