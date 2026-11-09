@@ -160,18 +160,23 @@ function distanceField( grid, target ) {
   return dist;
 }
 
-// Siguiente direccion desde `from` para acercarse a target por el camino mas
-// corto. `from` incluye x, y y la direccion actual. El giro de 180 solo se
-// permite cuando no existe otra direccion valida.
-function nextDirToward( grid, from, target ) {
-  const dist = distanceField( grid, target );
-  if ( !dist ) return null;
-
+// Direcciones validas desde la celda actual, sin el giro de 180 salvo que no
+// quede otra salida. Mantiene el orden fijo de desempate.
+function ghostOptions( grid, from ) {
   const options = TIE_ORDER.filter(
     ( dir ) => canMove( grid, from.x, from.y, dir, 'ghost' )
   );
   const forward = options.filter( ( dir ) => dir !== OPPOSITE[ from.dir ] );
-  const choices = forward.length ? forward : options;
+  return forward.length ? forward : options;
+}
+
+// Siguiente direccion desde `from` para acercarse a target por el camino mas
+// corto. `from` incluye x, y y la direccion actual.
+function nextDirToward( grid, from, target ) {
+  const dist = distanceField( grid, target );
+  if ( !dist ) return null;
+
+  const choices = ghostOptions( grid, from );
   if ( !choices.length ) return null;
 
   let best = null;
@@ -223,7 +228,7 @@ function reachable( grid, from, target ) {
   return dist[ y ] !== undefined && dist[ y ][ x ] !== -1;
 }
 
-// Celda objetivo segun el comportamiento. El paso 5 amplia los casos.
+// Celda objetivo segun el comportamiento. El erratico no tiene objetivo.
 function ghostTarget( game, g ) {
   const grid = game.grid;
   const pac = pacmanCell( game );
@@ -259,8 +264,49 @@ function ghostTarget( game, g ) {
   return null;
 }
 
+// Distancia Manhattan entre dos celdas.
+function manhattan( a, b ) {
+  return Math.abs( a.x - b.x ) + Math.abs( a.y - b.y );
+}
+
+// Erratico: vaga al azar cuando Pac-Man esta lejos y huye cuando se acerca.
+const WANDERER_ALERT_DISTANCE = 8;
+
+function decideWanderer( game, g ) {
+  const grid = game.grid;
+  const choices = ghostOptions( grid, g );
+  if ( !choices.length ) return;
+
+  const pac = pacmanCell( game );
+  const current = { x: Math.round( g.x ), y: Math.round( g.y ) };
+
+  if ( manhattan( current, pac ) > WANDERER_ALERT_DISTANCE ) {
+    g.dir = choices[ Math.floor( Math.random() * choices.length ) ];
+    return;
+  }
+
+  // Cerca de Pac-Man: la direccion valida que mas lo aleja.
+  let best = choices[ 0 ];
+  let bestDist = -Infinity;
+  for ( const dir of choices ) {
+    const n = neighbor( grid, current.x, current.y, dir );
+    if ( !n ) continue;
+    const d = manhattan( n, pac );
+    if ( d > bestDist ) {
+      bestDist = d;
+      best = dir;
+    }
+  }
+  g.dir = best;
+}
+
 function decideGhost( game, g ) {
   const grid = game.grid;
+
+  if ( g.kind === 'wanderer' ) {
+    decideWanderer( game, g );
+    return;
+  }
 
   const target = ghostTarget( game, g );
   if ( target ) {
@@ -272,12 +318,10 @@ function decideGhost( game, g ) {
   }
 
   // Sin objetivo (o sin ruta): direccion valida al azar.
-  const options = Object.keys( DIRS ).filter(
-    ( dir ) => dir !== OPPOSITE[ g.dir ] && canMove( grid, g.x, g.y, dir, 'ghost' )
-  );
-  // Sin salida (callejon): permitir el giro de 180.
-  const choices = options.length ? options : [ OPPOSITE[ g.dir ] ];
-  g.dir = choices[ Math.floor( Math.random() * choices.length ) ];
+  const choices = ghostOptions( grid, g );
+  if ( choices.length ) {
+    g.dir = choices[ Math.floor( Math.random() * choices.length ) ];
+  }
 }
 
 function moveGhost( game, g ) {
