@@ -190,12 +190,55 @@ function nextDirToward( grid, from, target ) {
   return best || choices[ 0 ];
 }
 
-// Celda objetivo segun el comportamiento. Los pasos 4 y 5 amplian los casos.
-function ghostTarget( game, g ) {
+// Celda redondeada que ocupa Pac-Man.
+function pacmanCell( game ) {
   const p = game.pacman;
-  if ( g.kind === 'direct' ) {
-    return { x: Math.round( p.x ), y: Math.round( p.y ) };
+  return { x: Math.round( p.x ), y: Math.round( p.y ) };
+}
+
+// Recorta una celda a los limites del laberinto.
+function clipToMaze( grid, cell ) {
+  return {
+    x: Math.max( 0, Math.min( grid[ 0 ].length - 1, cell.x ) ),
+    y: Math.max( 0, Math.min( grid.length - 1, cell.y ) ),
+  };
+}
+
+// Celda `cells` por delante de Pac-Man en su direccion actual, recortada.
+function aheadOfPacman( game, cells ) {
+  const base = pacmanCell( game );
+  const d = DIRS[ game.pacman.dir ];
+  return clipToMaze( game.grid, {
+    x: base.x + d.x * cells,
+    y: base.y + d.y * cells,
+  } );
+}
+
+// Hay ruta desde `from` hasta `target`?
+function reachable( grid, from, target ) {
+  const dist = distanceField( grid, target );
+  if ( !dist ) return false;
+  const x = Math.round( from.x );
+  const y = Math.round( from.y );
+  return dist[ y ] !== undefined && dist[ y ][ x ] !== -1;
+}
+
+// Celda objetivo segun el comportamiento. El paso 5 amplia los casos.
+function ghostTarget( game, g ) {
+  const grid = game.grid;
+  const pac = pacmanCell( game );
+
+  if ( g.kind === 'direct' ) return pac;
+
+  if ( g.kind === 'ambusher' ) {
+    const target = aheadOfPacman( game, 4 );
+    // Si el objetivo cae en pared o no hay ruta, apunta a Pac-Man.
+    if ( !isWall( grid, target.x, target.y, 'ghost' ) && reachable( grid, g, target ) ) {
+      return target;
+    }
+    return pac;
   }
+
   return null;
 }
 
